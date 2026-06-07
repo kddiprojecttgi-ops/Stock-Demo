@@ -1,0 +1,6 @@
+{
+  "name": "Truck Record Management",
+  "description": "A responsive Truck Record Management website using HTML, CSS, and vanilla JavaScript with Supabase integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

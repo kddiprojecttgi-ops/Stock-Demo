@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Truck Record Management</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind Stylesheet -->
+    <link rel="stylesheet" href="/style.css" />
+    
+    <!-- Supabase Client Dynamic Import Helper -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Lucide Vector Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+  </head>
+  <body class="bg-slate-50 min-h-screen text-slate-900 selection:bg-blue-100 selection:text-blue-800">
+    
+    <!-- Top Modern Navigation Header -->
+    <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm px-4 lg:px-8 py-3">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        
+        <!-- Brand Title -->
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl text-white shadow-md shadow-blue-200">
+            <i data-lucide="truck" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h1 id="app-title-display" class="font-sans font-bold tracking-tight text-xl text-slate-900 sm:text-2xl">
+              Truck Record Management
+            </h1>
+            <p id="app-subtitle-display" class="text-xs text-slate-500 font-medium">Logistics Center Dashboard</p>
+          </div>
+        </div>
+
+        <!-- Connection Status & System Guides -->
+        <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <!-- Connection Status Badge -->
+          <div id="connection-badge" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200 transition-all duration-300">
+            <span class="relative flex h-2 w-2">
+              <span id="badge-pulse" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
+              <span id="badge-dot" class="relative inline-flex rounded-full h-2 w-2 bg-slate-500"></span>
+            </span>
+            <span id="badge-text">Initializing...</span>
+          </div>
+
+          <!-- Supabase Help Dialog Trigger -->
+          <button id="guide-modal-trigger" class="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 transition text-xs font-semibold rounded-lg cursor-pointer">
+            <i data-lucide="database" class="w-3.5 h-3.5"></i>
+            <span>Database Setup SQL</span>
+          </button>
+        </div>
+
+      </div>
+    </header>
+
+    <!-- Main Responsive Layout Wrapper -->
+    <main class="max-w-7xl mx-auto px-4 lg:px-8 py-8 space-y-8 animate-fade-in">
+      
+      <!-- Print-Only Report Header -->
+      <div class="hidden print:block border-b-2 border-slate-800 pb-4 mb-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-extrabold tracking-tight text-slate-900 font-sans">Truck Record Management Report</h1>
+            <p class="text-sm text-slate-500 font-medium">Logistics Center Live Directory Logs</p>
+          </div>
+          <div class="text-right text-xs font-mono text-slate-500 space-y-1">
+            <div id="print-date">Date: 2026-06-07</div>
+            <div id="print-count">Total Records: 0</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Upper Section Grid: Form & Filters side-by-side or stacked -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- COLUMN 1: Add New Truck Record Form Card (Spans 5 cols) -->
+        <section class="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden">
+          <!-- Decorative gradient bar -->
+          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500"></div>
+          
+          <div class="flex items-center gap-2 mb-6">
+            <i data-lucide="file-plus" class="w-5 h-5 text-blue-600"></i>
+            <h2 id="form-card-title" class="text-lg font-bold text-slate-900 tracking-tight">Add New Truck Record</h2>
+          </div>
+
+          <!-- Main Add Form -->
+          <form id="record-form" class="space-y-4">
+            <!-- Hidden ID Field for when editing -->
+            <input type="hidden" id="record-id-field" value="">
+
+            <!-- Date -->
+            <div>
+              <label for="record-date" id="label-date" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Date</label>
+              <div class="relative">
+                <i data-lucide="calendar" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 py-1 h-4 text-slate-400"></i>
+                <input type="date" id="record-date" required class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring font-medium bg-slate-50/50">
+              </div>
+            </div>
+
+            <!-- Truck Number Dropdown -->
+            <div>
+              <label for="record-truck" id="label-truck" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Truck Number</label>
+              <select id="record-truck" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring font-medium bg-slate-50/50">
+                <option value="" disabled selected id="opt-select-truck">-- Select Truck Number --</option>
+              </select>
+            </div>
+
+            <!-- Owner Dropdown -->
+            <div>
+              <label for="record-owner" id="label-owner" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Owner</label>
+              <select id="record-owner" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring font-medium bg-slate-50/50">
+                <option value="" disabled selected id="opt-select-owner">-- Select Owner --</option>
+              </select>
+            </div>
+
+            <!-- Size Dropdown -->
+            <div>
+              <label for="record-size" id="label-size" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Size</label>
+              <select id="record-size" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring font-medium bg-slate-50/50">
+                <option value="" disabled selected id="opt-select-size">-- Select Size --</option>
+              </select>
+            </div>
+
+            <!-- Weight Dropdown -->
+            <div>
+              <label for="record-weight" id="label-weight" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Weight</label>
+              <select id="record-weight" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring font-medium bg-slate-50/50">
+                <option value="" disabled selected id="opt-select-weight">-- Select Weight --</option>
+              </select>
+            </div>
+
+            <!-- Warehouse Number Dropdown -->
+            <div>
+              <label for="record-warehouse" id="label-warehouse" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Warehouse Number</label>
+              <select id="record-warehouse" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring font-medium bg-slate-50/50">
+                <option value="" disabled selected id="opt-select-warehouse">-- Select Warehouse Number --</option>
+              </select>
+            </div>
+
+            <!-- Submission and Control buttons -->
+            <div class="flex gap-3 pt-2">
+              <button type="submit" id="submit-record-btn" class="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white py-2.5 px-4 rounded-xl text-sm font-semibold shadow-md shadow-blue-100 hover:shadow-lg transition cursor-pointer">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                <span id="btn-text-submit">Add Record</span>
+              </button>
+              
+              <!-- Cancel Edit Button (Initially Hidden) -->
+              <button type="button" id="cancel-edit-btn" class="hidden items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2.5 px-4 rounded-xl text-sm font-semibold transition border border-slate-200 cursor-pointer">
+                <i data-lucide="x" class="w-4 h-4"></i>
+                <span id="btn-text-cancel">Cancel</span>
+              </button>
+            </div>
+
+          </form>
+        </section>
+
+        <!-- COLUMN 2: Filter and Search Panel (Spans 7 cols) -->
+        <section class="lg:col-span-7 bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden">
+          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-emerald-500"></div>
+
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="filter" class="w-5 h-5 text-teal-600"></i>
+              <h2 id="filter-card-title" class="text-lg font-bold text-slate-900 tracking-tight">Filter & Search Records</h2>
+            </div>
+            
+            <!-- Clear Filters Button -->
+            <button id="clear-filters-btn" class="inline-flex items-center gap-1 px-3 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold rounded-lg transition shadow-sm cursor-pointer">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+              <span id="filter-btn-clear">Clear Filters</span>
+            </button>
+          </div>
+
+          <!-- Filter Grid form -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Search by No -->
+            <div>
+              <label for="filter-no" id="label-filter-no" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">No</label>
+              <div class="relative">
+                <i data-lucide="hash" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                <input type="text" id="filter-no" placeholder="Search No (e.g., 2)..." class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50">
+              </div>
+            </div>
+
+            <!-- Search by Date Range (Start & End Date) -->
+            <div class="sm:col-span-1">
+              <label id="label-filter-date-range" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Date Range</label>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="relative">
+                  <input type="date" id="filter-start-date" title="Start Date" class="w-full px-2 py-2 border border-slate-200 rounded-xl text-slate-900 text-xs focus:ring focus-ring bg-slate-50/50">
+                </div>
+                <div class="relative">
+                  <input type="date" id="filter-end-date" title="End Date" class="w-full px-2 py-2 border border-slate-200 rounded-xl text-slate-900 text-xs focus:ring focus-ring bg-slate-50/50">
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter Truck Number Dropdown -->
+            <div>
+              <label for="filter-truck" id="label-filter-truck" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Truck Number</label>
+              <select id="filter-truck" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium">
+                <option value="" id="opt-all-trucks">All Truck Numbers</option>
+              </select>
+            </div>
+
+            <!-- Filter Owner Dropdown -->
+            <div>
+              <label for="filter-owner" id="label-filter-owner" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Owner</label>
+              <select id="filter-owner" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium">
+                <option value="" id="opt-all-owners">All Owners</option>
+              </select>
+            </div>
+
+            <!-- Filter Size Dropdown -->
+            <div>
+              <label for="filter-size" id="label-filter-size" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Size</label>
+              <select id="filter-size" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium">
+                <option value="" id="opt-all-sizes">All Sizes</option>
+              </select>
+            </div>
+
+            <!-- Filter Weight Dropdown -->
+            <div>
+              <label for="filter-weight" id="label-filter-weight" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Weight</label>
+              <select id="filter-weight" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium">
+                <option value="" id="opt-all-weights">All Weights</option>
+              </select>
+            </div>
+
+            <!-- Filter Warehouse Number Dropdown -->
+            <div class="sm:col-span-2">
+              <label for="filter-warehouse" id="label-filter-warehouse" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Warehouse Number</label>
+              <select id="filter-warehouse" class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium">
+                <option value="" id="opt-all-warehouses">All Warehouse Numbers</option>
+              </select>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+
+      <!-- MAIN TABLE SECTION -> Horizontal Scroll & Cards responsive wrapper -->
+      <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden" id="records-table-section">
+        
+        <!-- Search state sub-panel -->
+        <div class="px-6 py-4.5 bg-slate-50 border-b border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 flex-wrap">
+          <div class="flex items-center gap-2">
+            <div class="w-2.5 h-2.5 bg-blue-600 rounded-full animate-pulse"></div>
+            <h3 class="font-bold text-slate-800 text-sm tracking-tight">Active Logistics Logs</h3>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <div class="text-xs text-slate-500 font-medium" id="record-count-display">
+              Records found: <span class="font-bold text-slate-900" id="record-count-num">0</span>
+            </div>
+            <button id="print-pdf-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 active:bg-slate-100 transition text-xs font-semibold rounded-lg cursor-pointer shadow-sm">
+              <i data-lucide="printer" class="w-3.5 h-3.5 text-blue-600"></i>
+              <span>Print / PDF Report</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Table Outer Container -->
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full min-w-[850px] border-collapse text-left text-sm text-slate-600">
+            <!-- Headers -->
+            <thead>
+              <tr class="bg-slate-50/60 font-semibold border-b border-slate-200 text-slate-700">
+                <th class="px-6 py-4 w-16" id="th-no">No</th>
+                <th class="px-6 py-4 w-32" id="th-date">Date</th>
+                <th class="px-6 py-4" id="th-truck">Truck Number</th>
+                <th class="px-6 py-4" id="th-owner">Owner</th>
+                <th class="px-6 py-4" id="th-size">Size</th>
+                <th class="px-6 py-4" id="th-weight">Weight</th>
+                <th class="px-6 py-4" id="th-warehouse">Warehouse Number</th>
+                <th class="px-6 py-4 text-center w-28 print:hidden" id="th-actions">Actions</th>
+              </tr>
+            </thead>
+            <!-- Body -->
+            <tbody id="table-body" class="divide-y divide-slate-100 font-medium">
+              <!-- Loading Skeletons or Empty States get injected here dynamically -->
+              <tr>
+                <td colspan="8" class="text-center py-12">
+                  <div class="flex flex-col items-center justify-center gap-2">
+                    <div class="w-8 h-8 rounded-full border-3 border-blue-100 border-t-blue-600 animate-spin"></div>
+                    <span class="text-slate-500 font-medium text-xs">Loading logs...</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination or Footer status metrics -->
+        <div id="table-footer-status" class="px-6 py-4 border-t border-slate-100 text-center text-xs text-slate-400 font-medium">
+          Powered by Vanilla HTML5, CSS, & Javascript
+        </div>
+
+      </section>
+
+      <!-- BOTTOM SECTION: Dynamic Dropdown Options Append forms -->
+      <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 relative overflow-hidden">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-pink-500 to-amber-500"></div>
+        
+        <div class="mb-6">
+          <div class="flex items-center gap-2">
+            <i data-lucide="settings" class="w-5 h-5 text-indigo-600 animate-spin-slow"></i>
+            <h2 id="settings-card-title" class="text-lg font-bold text-slate-900 tracking-tight">Add Dropdown Options</h2>
+          </div>
+          <p id="settings-card-subtitle" class="text-xs text-slate-500 mt-1 max-w-xl font-medium">
+            Add custom items to your select menus. Any added values immediately expand the dropdown lists above.
+          </p>
+        </div>
+
+        <!-- Add Option Options Grid -->
+        <form id="add-option-form" class="grid grid-cols-1 md:grid-cols-5 gap-6 items-end">
+          
+          <!-- Add Truck Option -->
+          <div class="space-y-1.5 align-top">
+            <label for="add-opt-truck" id="lbl-add-truck" class="block text-slate-500 font-semibold text-xs uppercase tracking-wider">Add Truck Number</label>
+            <input type="text" id="add-opt-truck" placeholder="e.g., TRK-999" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium">
+            <div class="mt-2">
+              <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block mb-1">Current Options</span>
+              <div id="opts-container-truck" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1.5 bg-slate-50 border border-slate-100 rounded-xl custom-scrollbar"></div>
+            </div>
+          </div>
+
+          <!-- Add Owner Option -->
+          <div class="space-y-1.5 align-top">
+            <label for="add-opt-owner" id="lbl-add-owner" class="block text-slate-500 font-semibold text-xs uppercase tracking-wider">Add Owner Name</label>
+            <input type="text" id="add-opt-owner" placeholder="e.g., Prime Fast Cargo" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium">
+            <div class="mt-2">
+              <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block mb-1">Current Options</span>
+              <div id="opts-container-owner" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1.5 bg-slate-50 border border-slate-100 rounded-xl custom-scrollbar"></div>
+            </div>
+          </div>
+
+          <!-- Add Size Option -->
+          <div class="space-y-1.5 align-top">
+            <label for="add-opt-size" id="lbl-add-size" class="block text-slate-500 font-semibold text-xs uppercase tracking-wider">Add Size</label>
+            <input type="text" id="add-opt-size" placeholder="e.g., 53-footer Reefer" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium">
+            <div class="mt-2">
+              <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block mb-1">Current Options</span>
+              <div id="opts-container-size" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1.5 bg-slate-50 border border-slate-100 rounded-xl custom-scrollbar"></div>
+            </div>
+          </div>
+
+          <!-- Add Weight Option -->
+          <div class="space-y-1.5 align-top">
+            <label for="add-opt-weight" id="lbl-add-weight" class="block text-slate-500 font-semibold text-xs uppercase tracking-wider">Add Weight</label>
+            <input type="text" id="add-opt-weight" placeholder="e.g., 18.2 Tons" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium">
+            <div class="mt-2">
+              <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block mb-1">Current Options</span>
+              <div id="opts-container-weight" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1.5 bg-slate-50 border border-slate-100 rounded-xl custom-scrollbar"></div>
+            </div>
+          </div>
+
+          <!-- Add Warehouse Option -->
+          <div class="space-y-1.5 align-top">
+            <label for="add-opt-warehouse" id="lbl-add-warehouse" class="block text-slate-500 font-semibold text-xs uppercase tracking-wider">Add Warehouse Number</label>
+            <input type="text" id="add-opt-warehouse" placeholder="e.g., WH-F6" class="w-full px-3.5 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium">
+            <div class="mt-2">
+              <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block mb-1">Current Options</span>
+              <div id="opts-container-warehouse" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1.5 bg-slate-50 border border-slate-100 rounded-xl custom-scrollbar"></div>
+            </div>
+          </div>
+
+          <!-- Button row spanning all cols on md -->
+          <div class="md:col-span-5 flex justify-end mt-2 pt-2 border-t border-slate-100">
+            <button type="submit" id="add-options-btn" class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-xl py-2.5 px-6 text-sm font-semibold shadow-md shadow-indigo-100 hover:shadow-lg transition cursor-pointer">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              <span id="btn-text-add-options">Append Options</span>
+            </button>
+          </div>
+
+        </form>
+      </section>
+
+    </main>
+
+    <!-- FLOATING POPUP: Database Setup SQL Modal -->
+    <div id="guide-modal" class="hidden fixed inset-0 z-50 overflow-hidden" role="dialog" aria-modal="true">
+      <!-- Backdrop fade -->
+      <div id="guide-modal-backdrop" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity duration-300"></div>
+      
+      <!-- Modal Contents alignment -->
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div id="guide-modal-container" class="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col border border-slate-200 shadow-2xl transition-all float-down duration-300">
+          
+          <!-- Header -->
+          <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <i data-lucide="database" class="w-5 h-5 text-indigo-400"></i>
+              <h3 id="sql-guide-title" class="font-semibold text-base">Supabase Database Setup Guide</h3>
+            </div>
+            <button id="guide-modal-close" class="text-slate-400 hover:text-white transition cursor-pointer">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <!-- Scrollable Body -->
+          <div class="p-6 overflow-y-auto space-y-5 custom-scrollbar text-sm">
+            <p id="sql-guide-intro" class="text-slate-600">To enable persistent database storage, execute these queries inside the <strong>SQL Editor</strong> page on your Supabase dashboard:</p>
+            
+            <!-- SQL Codes area -->
+            <div class="space-y-4">
+              
+              <!-- Code 1 -->
+              <div>
+                <div class="flex justify-between items-center bg-slate-100 px-3.5 py-1.5 text-xs text-slate-700 font-semibold border border-slate-200 rounded-t-lg">
+                  <span>1. Truck Records Table</span>
+                  <button onclick="navigator.clipboard.writeText(document.getElementById('sql-records-code').innerText); alert('Copied Records Table SQL!');" class="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer">
+                    <i data-lucide="copy" class="w-3 h-3"></i> Copy
+                  </button>
+                </div>
+                <pre class="bg-slate-900 text-slate-300 text-[11px] p-4 rounded-b-lg overflow-x-auto font-mono max-h-48 custom-scrollbar whitespace-pre-wrap leading-relaxed border-t-0" id="sql-records-code"></pre>
+              </div>
+
+              <!-- Code 2 -->
+              <div>
+                <div class="flex justify-between items-center bg-slate-100 px-3.5 py-1.5 text-xs text-slate-700 font-semibold border border-slate-200 rounded-t-lg">
+                  <span>2. Dropdown Options Table</span>
+                  <button onclick="navigator.clipboard.writeText(document.getElementById('sql-options-code').innerText); alert('Copied Options Table SQL!');" class="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer">
+                    <i data-lucide="copy" class="w-3 h-3"></i> Copy
+                  </button>
+                </div>
+                <pre class="bg-slate-900 text-slate-300 text-[11px] p-4 rounded-b-lg overflow-x-auto font-mono max-h-48 custom-scrollbar whitespace-pre-wrap leading-relaxed border-t-0" id="sql-options-code"></pre>
+              </div>
+
+              <!-- Code 3 -->
+              <div>
+                <div class="flex justify-between items-center bg-slate-100 px-3.5 py-1.5 text-xs text-slate-700 font-semibold border border-slate-200 rounded-t-lg">
+                  <span>3. Optional Default Seeding</span>
+                  <button onclick="navigator.clipboard.writeText(document.getElementById('sql-seed-code').innerText); alert('Copied Default Seeding SQL!');" class="text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer">
+                    <i data-lucide="copy" class="w-3 h-3"></i> Copy
+                  </button>
+                </div>
+                <pre class="bg-slate-900 text-slate-300 text-[11px] p-4 rounded-b-lg overflow-x-auto font-mono max-h-40 custom-scrollbar whitespace-pre-wrap leading-relaxed border-t-0" id="sql-seed-code"></pre>
+              </div>
+
+            </div>
+
+            <!-- Done Notice -->
+            <div class="p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-800 text-xs leading-relaxed flex gap-2">
+              <i data-lucide="check-circle" class="w-5 h-5 text-emerald-600 shrink-0"></i>
+              <span id="sql-guide-done">Once this schema script goes live, your website will automatically read and update Supabase. Until then, everything auto-reverts to browser storage transparently!</span>
+            </div>
+
+          </div>
+
+          <!-- Footer -->
+          <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+            <button id="guide-modal-close-btn" class="bg-slate-800 hover:bg-slate-900 text-white font-semibold text-xs py-2 px-4 rounded-xl cursor-pointer">Close</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+
+    <!-- DYNAMIC GENERAL OVERLAYS: EDIT MODAL & TOAST SYSTEM -->
+    
+    <!-- Toast Popup Notification overlay container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-50 space-y-2 max-w-sm w-full"></div>
+
+    <!-- Custom Dialog Modal for Delete Confirmation -->
+    <div id="confirm-modal" class="hidden fixed inset-0 z-50 overflow-hidden" role="dialog" aria-modal="true">
+      <div id="confirm-modal-backdrop" class="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"></div>
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md border border-slate-200 shadow-2xl p-6 space-y-4">
+          <div class="flex items-center gap-3 text-red-600">
+            <div class="p-2 bg-red-100 rounded-xl">
+              <i data-lucide="trash-2" class="w-6 h-6"></i>
+            </div>
+            <h3 class="font-bold text-lg text-slate-900">Delete Record</h3>
+          </div>
+          <p id="delete-confirm-text" class="text-sm text-slate-600 leading-relaxed">
+            Are you sure you want to delete this truck record? This action cannot be reversed.
+          </p>
+          <div class="flex justify-end gap-3 pt-2">
+            <button id="confirm-delete-cancel" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold py-2 px-4 rounded-xl cursor-pointer">Cancel</button>
+            <button id="confirm-delete-button" class="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2 px-4 rounded-xl cursor-pointer">Delete Record</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Custom Edit Dialog Modal (Alternative to top form shifting if they want secondary modal edits, wait! Let's handle Edit smoothly by opening a nice floating modular edit form overlay so they never lose sight of the record table scroll position!) -->
+    <div id="edit-modal" class="hidden fixed inset-0 z-50 overflow-hidden" role="dialog" aria-modal="true">
+      <div id="edit-modal-backdrop" class="absolute inset-0 bg-slate-900/60 backdrop-blur-xs"></div>
+      <div class="absolute inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg border border-slate-200 shadow-2xl p-6 relative overflow-hidden flex flex-col max-h-[90vh]">
+          <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+          
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-5 h-5 text-blue-600"></i>
+              <h3 id="edit-modal-title" class="font-bold text-slate-900 text-base">Edit Truck Record</h3>
+            </div>
+            <button id="edit-modal-close" class="text-slate-400 hover:text-slate-600 cursor-pointer">
+              <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+          </div>
+
+          <!-- Edit Modal Form content -->
+          <form id="edit-modal-form" class="space-y-4 overflow-y-auto custom-scrollbar pr-1">
+            <input type="hidden" id="edit-record-id-field" value="">
+
+            <div>
+              <label for="edit-record-date" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Date</label>
+              <div class="relative">
+                <i data-lucide="calendar" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                <input type="date" id="edit-record-date" required class="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50">
+              </div>
+            </div>
+
+            <div>
+              <label for="edit-record-truck" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Truck Number</label>
+              <select id="edit-record-truck" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium"></select>
+            </div>
+
+            <div>
+              <label for="edit-record-owner" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Owner</label>
+              <select id="edit-record-owner" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium"></select>
+            </div>
+
+            <div>
+              <label for="edit-record-size" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Size</label>
+              <select id="edit-record-size" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium"></select>
+            </div>
+
+            <div>
+              <label for="edit-record-weight" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Weight</label>
+              <select id="edit-record-weight" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium"></select>
+            </div>
+
+            <div>
+              <label for="edit-record-warehouse" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Warehouse Number</label>
+              <select id="edit-record-warehouse" required class="w-full px-3 py-2 border border-slate-200 rounded-xl text-slate-900 text-sm focus:ring focus-ring bg-slate-50/50 font-medium"></select>
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <button type="button" id="edit-modal-cancel" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold py-2 px-5 rounded-xl cursor-pointer">Cancel</button>
+              <button type="submit" id="edit-modal-save" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-5 rounded-xl cursor-pointer">Save Changes</button>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Master JS script bootstrapper -->
+    <script type="module" src="/script.js"></script>
+  </body>
+</html>
